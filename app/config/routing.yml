@@ -1,0 +1,7 @@
+app:
+    resource: "@AppBundle/Controller/"
+    type:     annotation
+
+main:
+    path: "/hello"
+    defaults: { _controller: AppBundle:Main:index }    
