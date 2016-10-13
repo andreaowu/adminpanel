@@ -13,11 +13,12 @@ class Organization {
     }
 
     public function addUser($user) {
-        array_push($this->usernames, $user->name);
+        array_push($this->usernames, $user->getFirst()." ".$user->getLast());
     }
 
-    public function deleteUser($user) {
-        $ind = array_search($this->usernames, $user);
+    public function deleteUser($first, $last) {
+        $ind = array_search($this->usernames, 
+                $first." ".$last);
         array_splice($this->usernames, $ind, 1);
     }
 
@@ -26,11 +27,11 @@ class Organization {
     }
 
     public function addGroup($group) {
-        array_push($this->groupnames, $group);
+        array_push($this->groupnames, $group->getName());
     }
 
     public function deleteGroup($group) {
-        $ind = array_search($this->groupnames, $group->name);
+        $ind = array_search($this->groupnames, $group->getName());
         array_splice($this->groupnames, $ind, 1);
     }
 

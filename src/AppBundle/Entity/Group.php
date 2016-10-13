@@ -6,9 +6,12 @@ class Group {
     protected $name;
     protected $users;
 
-    function __construct($given_name) {
-        $this->name = $given_name;
+    function __construct() {
         $this->users = array();
+    }
+
+    public function setName($given_name) {
+        $this->name = $given_name;
     }
 
     public function getName() {
