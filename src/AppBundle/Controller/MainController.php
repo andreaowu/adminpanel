@@ -50,9 +50,6 @@ class MainController extends Controller
             } else if ($request->request->has('user_delete')) {
                 $user_delete_form->bind($request);
                 $user = $this->findUser($user_delete_form, "name", $em);
-                if (is_null($user)) {
-                    return $this->createGoBackForm("Invalid input, no changes!");
-                }
                 $groupIds = $user->getGroupIds();
                 foreach($groupIds as $id) {
                     $em->getRepository('AppBundle:Group')->findOneById($id)->deleteUser($user->getId());
@@ -66,8 +63,9 @@ class MainController extends Controller
                 $group_delete_form->bind($request);
                 $group = $this->findGroup($group_delete_form, "name", $em);
                 $users = $group->getUserIds();
-                if (is_null($group)) {
-                    return $this->createGoBackForm("Invalid input, no changes!");
+                if (count($users) > 0) {
+                    return $this->createGoBackForm("Users still exist in {$group->getName()} group,
+                                                   cannot delete group!", 0);
                 }
                 foreach($users as $user) {
                     $em->getRepository('AppBundle:Group')->findById($user)->deleteGroup($group->getId());
@@ -77,13 +75,10 @@ class MainController extends Controller
                 $assign_user_form->bind($request);
                 $user = $this->findUser($assign_user_form, "users", $em);
                 $group = $this->findGroup($assign_user_form, "groups", $em);
-                if (is_null($user) || is_null($group)) {
-                    return $this->createGoBackForm("Invalid input, no changes!");
-                }
                 foreach ($user->getGroupIds() as $id) {
                     if ($id == $group->getId()) {
                         return $this->createGoBackForm("User {$user->getName()} is already 
-                                                       in {$group->getName()} group!");
+                                                       in {$group->getName()} group!", 0);
                     }
                 }
                 $group->addUser($user->getId());
@@ -95,14 +90,21 @@ class MainController extends Controller
                 $delete_user_group_form->bind($request);
                 $user = $this->findUser($delete_user_group_form, "users", $em);
                 $group = $this->findGroup($delete_user_group_form, "groups", $em);
-                if (is_null($user) || is_null($group)) {
-                    return $this->createGoBackForm("Invalid input, no changes!");
-                }
-                $group->deleteUser($user->getId());
-                $user->deleteGroup($group->getId());
-                $em->persist($group);
-                return $this->processData($em, $user, "User {$user->getName()} got 
+
+                # Check that group actually has given user
+                foreach ($group->getUserIds() as $id) {
+                    $userId = $user->getID();
+                    if ($id == $userId) {
+                        $group->deleteUser($userId);
+                        $user->deleteGroup($id);
+                        $em->persist($group);
+                        return $this->processData($em, $user, "User {$user->getName()} got 
                                           deleted from {$group->getName()} group!", 1);
+                    }
+                }
+
+                return $this->createGoBackForm("User {$user->getName()} is not already
+                                               in {$group->getName()} group!", 0);
             }
             return $this->renderIndexPage($user_create_form, $user_delete_form, 
                                           $group_create_form, $group_delete_form,
@@ -132,7 +134,7 @@ class MainController extends Controller
      */
     private function createDelForm($form_name, $choices, $entity) {
         return $this->get('form.factory')->createNamedBuilder($form_name, 'form', null)
-                    ->add('name', 'choice', array("choices" => $choices))
+                    ->add('name', 'choice', array("choices" => $choices, 'empty_value' => 'Name'))
                     ->add("Delete {$entity->getName()}", 'submit')
                     ->getForm();
     }
@@ -150,8 +152,8 @@ class MainController extends Controller
      */
     public function userAndGroupForm($form_name, $submit_button, $allUsers, $allGroups) {
          return $this->get('form.factory')->createNamedBuilder($form_name, 'form', null)
-                     ->add('users', 'choice', array("choices" => $allUsers))
-                     ->add('groups', 'choice', array("choices" => $allGroups))
+                     ->add('users', 'choice', array('choices' => $allUsers, 'empty_value' => 'Users'))
+                     ->add('groups', 'choice', array('choices' => $allGroups, 'empty_value' => 'Groups'))
                      ->add($submit_button, 'submit')
                      ->getForm();
     }
@@ -159,12 +161,17 @@ class MainController extends Controller
     /**
      * Creates form to go back to home page
      */
-    public function createGoBackForm($msg) {
+    public function createGoBackForm($msg, $outcome) {
+        if ($outcome == 1) {
+            $outcome = "Success!";
+        } else {
+            $outcome = "Failure!";
+        }
         $go_back_form = $this->get('form.factory')->createNamedBuilder('go_back', 'form', null)
                              ->add('Go Back', 'submit', array())->getForm();
         return $this->render('AppBundle:Main:success.html.twig', 
                              array('go_back_form'=>$go_back_form->createView(),
-                                   'msg' => $msg));
+                                   'msg' => $msg, 'outcome' => $outcome));
     }
 
     /**
@@ -219,7 +226,7 @@ class MainController extends Controller
             $em->remove($entity);
         }
         $em->flush();
-        return $this->createGoBackForm($return_string);
+        return $this->createGoBackForm($return_string, 1);
     }
 
 }

@@ -1,10 +1,10 @@
 {% extends "::base.html.twig" %}
 
-{% block title %}Success{% endblock %}
+{% block title %}{{ outcome }}{% endblock %}
 
 {% block body %}
 
-<h2>Success!</h2>
+<h2>{{ outcome }}</h2>
 <p>{{ msg  }}</p>
 {{ form_start(go_back_form) }}
 {{ form_end(go_back_form) }}
