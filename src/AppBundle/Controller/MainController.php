@@ -1,5 +1,8 @@
 <?php 
 # alphabetical order: https://knpuniversity.com/screencast/symfony-forms/custom-entity-type-query#play
+# DROP DATABASE symfony;
+# php bin/console doctrine:database:create
+# php bin/console doctrine:schema:update --force
 namespace AppBundle\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
